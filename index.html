@@ -97,20 +97,21 @@
         }
 
         .quick-replies {
-            padding: 12px 20px;
+            padding: 16px 20px;
             background: white;
             border-top: 1px solid #e2e8f0;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            justify-content: center;
         }
 
         .quick-btn {
             background: #f1f5f9;
             border: 1px solid #cbd5e1;
             border-radius: 40px;
-            padding: 8px 18px;
-            font-size: 0.85rem;
+            padding: 10px 20px;
+            font-size: 0.9rem;
             font-weight: 500;
             color: #1e293b;
             cursor: pointer;
@@ -122,50 +123,12 @@
             border-color: #94a3b8;
         }
 
-        .input-area {
-            display: flex;
-            padding: 16px 20px;
-            background: white;
-            border-top: 1px solid #e2e8f0;
-            gap: 12px;
-        }
-
-        .input-area input {
-            flex: 1;
-            padding: 12px 18px;
-            border: 1px solid #cbd5e1;
-            border-radius: 40px;
-            font-size: 1rem;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        .input-area input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
-        }
-
-        .input-area button {
-            background: #007bff;
-            border: none;
-            color: white;
-            padding: 0 22px;
-            border-radius: 40px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .input-area button:hover {
-            background: #0056b3;
-        }
-
         .typing {
             font-size: 0.8rem;
             color: #6c757d;
-            padding: 5px 0 0 12px;
+            padding: 10px 20px;
             display: none;
+            text-align: center;
         }
 
         .footer {
@@ -187,18 +150,13 @@
 
     <div class="messages-area" id="messagesArea">
         <div class="message bot-message">
-            <div class="bubble">👋 Hello! How can I help you today? Choose a quick question or type yours below.</div>
+            <div class="bubble">👋 Hello! How can I help you today? Choose a question below.</div>
         </div>
     </div>
 
     <div class="quick-replies" id="quickReplies"></div>
-
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Type your message..." autocomplete="off">
-        <button id="sendBtn">Send</button>
-    </div>
     <div class="typing" id="typingIndicator">🐾 Bot is thinking...</div>
-    <div class="footer">Demo chatbot – connected to n8n workflow</div>
+    <div class="footer">Demo chatbot – click any button to get an answer</div>
 </div>
 
 <script>
@@ -219,8 +177,6 @@
 
     // ======================= DOM elements =======================
     const messagesDiv = document.getElementById('messagesArea');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
     const typingIndicator = document.getElementById('typingIndicator');
 
     // ======================= Helper functions =======================
@@ -237,9 +193,6 @@
     }
 
     async function sendToWebhook(userMessage) {
-        // Disable input & button while waiting
-        userInput.disabled = true;
-        sendBtn.disabled = true;
         typingIndicator.style.display = 'block';
 
         try {
@@ -257,7 +210,6 @@
             }
 
             const data = await response.json();
-            // The reply from n8n is expected in `data.reply`
             const botReply = data.reply || "Sorry, I didn't get a proper response.";
             addMessage(botReply, 'bot');
         } catch (error) {
@@ -265,17 +217,12 @@
             addMessage("⚠️ Could not reach the support bot. Please check your connection or try again later.", 'bot');
         } finally {
             typingIndicator.style.display = 'none';
-            userInput.disabled = false;
-            sendBtn.disabled = false;
-            userInput.focus();
         }
     }
 
     function handleUserMessage(messageText) {
         if (!messageText.trim()) return;
-        // Show user message in chat
         addMessage(messageText, 'user');
-        // Send to webhook
         sendToWebhook(messageText);
     }
 
@@ -290,28 +237,6 @@
         });
         quickRepliesDiv.appendChild(btn);
     });
-
-    // ======================= Event listeners =======================
-    sendBtn.addEventListener('click', () => {
-        const msg = userInput.value.trim();
-        if (msg) {
-            handleUserMessage(msg);
-            userInput.value = '';
-        }
-    });
-
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const msg = userInput.value.trim();
-            if (msg) {
-                handleUserMessage(msg);
-                userInput.value = '';
-            }
-        }
-    });
 </script>
 </body>
 </html>
- 
- 
