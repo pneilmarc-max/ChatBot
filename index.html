@@ -139,8 +139,6 @@
             color: #94a3b8;
             border-top: 1px solid #e2e8f0;
         }
-
-        /* No input styles needed — input removed completely */
     </style>
 </head>
 <body>
@@ -156,7 +154,6 @@
         </div>
     </div>
 
-    <!-- Only quick reply buttons, no input field or send button -->
     <div class="quick-replies" id="quickReplies"></div>
     <div class="typing" id="typingIndicator">🐾 Bot is thinking...</div>
     <div class="footer">Demo chatbot – click any button to get an answer</div>
@@ -164,10 +161,8 @@
 
 <script>
     // ======================= CONFIGURATION =======================
-    // 🔁 REPLACE THIS URL WITH YOUR ACTUAL N8N WEBHOOK URL
     const WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/b3bcb54a-d525-4187-a716-1a6c4eae8466";
 
-    // Quick reply options (label & value sent to webhook)
     const QUICK_OPTIONS = [
         { label: "📦 Where is my order?", value: "Where is my order?" },
         { label: "🔄 How do I return an item?", value: "How do I return an item?" },
@@ -194,6 +189,25 @@
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // Extract reply text from various possible webhook response formats
+    function extractReplyFromResponse(data) {
+        if (typeof data === 'string') return data;
+        if (typeof data === 'object' && data !== null) {
+            // Common field names used by n8n and chatbots
+            const possibleKeys = ['reply', 'response', 'text', 'message', 'output', 'answer', 'content', 'botReply'];
+            for (let key of possibleKeys) {
+                if (data[key] && typeof data[key] === 'string') return data[key];
+            }
+            // If there's a nested 'data' object
+            if (data.data && typeof data.data === 'object') {
+                return extractReplyFromResponse(data.data);
+            }
+            // Fallback: return JSON string of the whole response for debugging
+            return JSON.stringify(data, null, 2);
+        }
+        return "Sorry, I received an unexpected response format.";
+    }
+
     async function sendToWebhook(userMessage) {
         typingIndicator.style.display = 'block';
 
@@ -208,15 +222,26 @@
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const data = await response.json();
-            const botReply = data.reply || "Sorry, I didn't get a proper response.";
+            // Try to parse as JSON, fallback to plain text
+            let data;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = text;
+            }
+
+            console.log('Webhook response:', data); // Helpful for debugging
+
+            const botReply = extractReplyFromResponse(data);
             addMessage(botReply, 'bot');
         } catch (error) {
             console.error('Webhook error:', error);
-            addMessage("⚠️ Could not reach the support bot. Please check your connection or try again later.", 'bot');
+            addMessage(`⚠️ Error: ${error.message}. Please check the webhook URL or network.`, 'bot');
         } finally {
             typingIndicator.style.display = 'none';
         }
